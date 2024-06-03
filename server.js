@@ -14,6 +14,7 @@ process.on("uncaughtException", (err) => {
 
 const http = require("http")
 const User = require("./models/user")
+const FriendRequest = require("./models/friendRequest")
 
 const server = http.createServer(app)
 
@@ -44,14 +45,45 @@ io.on("connenction", async (socket) => {
    if(user_id) {
     await User.findByIdAndUpdate(user_id,{socket_id})
    }
+   
+ socket.on("friend_request", async (data) =>{
+       console.log(data.to)
+       const to_user = await User.findById(data.to).select("socket_id")
+       const from_user = await User.findById(data.from).select("socket_id")
+       
+       await FriendRequest.create({
+           sender:data.from,
+           recipient:data.to,
+        })
+        io.to(to_user.socket_id).emit("new_friend_request", {
+            message:"New Friend Request Recieved"
+        })
+    io.to(from_user.socket_id).emit("request_sent",{
+        message:"Request Send Successfully"
+    })
 })
 
-io.on("friend_request", async (data) =>{
-    console.log(data.to)
-    const to = await User.findById(data.to)
-    io.to(to.socket_id).emit("new_friend_request", {
-         
+socket.on("accept_request", async (data) => {
+    console.log(data)
+    const request_doc = await FriendRequest.findById(data.request_id)
+    const sender = await User.findById(request_doc.sender)   
+    const recevier = await User.findById(request_doc.recipient)
+    sender.friends.push(request_doc.recipient)
+    recevier.friends.push(request_doc.sender)
+    await sender.save({new:true , validateModifiedOnly:true})   
+    await sender.save({new:true , validateModifiedOnly:true})
+    await FriendRequest.findByIdandDelete(data.request_id)
+    io.to(sender.socket_id).emit("request_accepted",{
+        message:"Friend Request Accepted"
     })
+    io.to(recevier.socket_id).emit("request_accepted",{
+        message:"Friend Request Accepted"
+    })
+    socket.on("end",function () {
+        console.log("Closing Connection")
+        socket.disconnect(0)
+    })
+})
 })
 
 process.on("unhandledRejection", (err) => {
