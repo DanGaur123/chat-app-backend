@@ -16,6 +16,7 @@ const http = require("http")
 const User = require("./models/user")
 const FriendRequest = require("./models/friendRequest")
 const path = require("path")
+const Message = require("./models/message")
 
 const server = http.createServer(app)
 
@@ -80,6 +81,28 @@ io.on("connenction", async (socket) => {
         io.to(recevier.socket_id).emit("request_accepted", {
             message: "Friend Request Accepted"
         })
+    })
+    socket.on("get_direct_conversations",async ({user_id},callback) => {
+        const allCoversations = await Message.find({participants: {$all: user_id}}).populate("participants","firstName lastName email _id status")
+        console.log(allCoversations)
+        callback(allCoversations)
+
+    })
+    socket.on("start_conversation", async (data) => {
+        const {to,from} = data
+        const existing_conversation = await Message.find({participants:{$size:2,$all:{to,from}}}).populate("participants","firstName lastName email _id status")
+        console.log(existing_conversation[0],"existing Conversation")
+        if(existing_conversation.length === 0){
+            let new_chat = await Message.create({
+                participants : {to,from}
+            })
+            new_chat = await Message.findById(new_chat._id).populate("participants","firstName lastName email _id status")
+            console.log(new_chat)
+            socket.emit("start_chat",new_chat)
+        }
+        else {
+            socket.emit("open_chat",existing_conversation[0])
+        }
     })
     socket.on("text_message",(data) => {
         console.log("Received Message",data)
