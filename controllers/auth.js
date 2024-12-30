@@ -87,7 +87,7 @@ exports.verifyOTP = async (req, res, nex) => {
         status: "success",
         message: "OTP verified successfully",
         token,
-        user_id: userDoc_id
+        user_id: userDoc._id
     })
 }
 
@@ -148,7 +148,7 @@ exports.protect = async (req,res,next) => {
   }
 
 
-  if(thisUser.changePasswordAfter(decoded.iat)){
+  if(thisUser.changedPasswordAfter(decoded.iat)){
     res.status(400).json({
         status:"error",
         message:"User Recently update Password, Please Login again"

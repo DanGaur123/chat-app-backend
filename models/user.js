@@ -74,12 +74,9 @@ const userSchema = new mongoose.Schema({
 
 
 userSchema.pre("save", async function (next) {
-    
     if (!this.isModified("otp") || !this.otp) {
-        console.log("not working")
         return next()
     } 
-  
     this.otp = await bcrypt.hash(this.otp.toString(), 12)
   
     console.log(this.otp.toString(), "FROM PRE SAVE HOOK")
@@ -89,7 +86,6 @@ userSchema.pre("save", async function (next) {
 
   userSchema.pre("save", async function (next) {
     if (!this.isModified("password") || !this.password){
-         console.log("not working either")
         return next()
     } 
   

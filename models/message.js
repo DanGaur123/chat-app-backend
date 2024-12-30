@@ -16,12 +16,15 @@ const MessageSchema = new mongoose.Schema({
                 ref:"User"
             },
             type: {
+                type:String,
+                enum : ["msg","Divider"],
+            },
+            subType : {
                 type : String,
                 enum: ["Text","Media","Document","Link"]
             },
             created_at: {
-                type:Date,
-                default : Date.now()
+                type: Date,
             },
             text : {
                 type : String
